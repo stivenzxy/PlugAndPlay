@@ -15,6 +15,9 @@ public class RecordAudioAction extends AbstractAction {
     private final AudioRecorder recordAudio;
     private final Consumer<String> uiLogger;
 
+    private Timer timer;
+    private int elapsedSeconds;
+
     public RecordAudioAction(AudioRecorder recordAudioUseCase, Consumer<String> uiLogger) {
         super("Grabar Audio");
         this.uiLogger = uiLogger;
@@ -32,12 +35,25 @@ public class RecordAudioAction extends AbstractAction {
 
     private void startRecording() {
         recordAudio.start();
-        putValue(Action.NAME, "Detener Grabación");
+        elapsedSeconds = 0;
+
+        timer = new Timer(1000, evt -> {
+            elapsedSeconds++;
+            putValue(Action.NAME, "Detener Grabación (" + formatTime(elapsedSeconds) + ")");
+        });
+        timer.start();
+
+        putValue(Action.NAME, "Detener Grabación (00:00)");
         uiLogger.accept(">> Grabación iniciada...");
         logger.info("Grabación iniciada por el usuario en GUI.");
     }
 
     private void stopAndSaveRecording() {
+        if (timer != null) {
+            timer.stop();
+            timer = null;
+        }
+
         File recordedAudio = recordAudio.stop();
         if (recordedAudio != null) {
             uiLogger.accept(">> Grabación guardada: " + recordedAudio);
@@ -46,5 +62,11 @@ public class RecordAudioAction extends AbstractAction {
             uiLogger.accept(">> Error: No se pudo obtener el audio grabado.");
         }
         putValue(Action.NAME, "Grabar Audio");
+    }
+
+    private String formatTime(int totalSeconds) {
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes, seconds);
     }
 }

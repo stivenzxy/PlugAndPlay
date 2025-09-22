@@ -1,10 +1,7 @@
 package com.plugAndPlay.Views;
 
 import com.plugAndPlay.Factories.AudioSourceFactory;
-import com.plugAndPlay.Interfaces.AudioLoader;
-import com.plugAndPlay.Interfaces.AudioRecorder;
-import com.plugAndPlay.Views.Actions.LoadAudioAction;
-import com.plugAndPlay.Views.Actions.RecordAudioAction;
+import com.plugAndPlay.Factories.ViewActionFactory;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
@@ -18,17 +15,16 @@ public class MainView {
     private final Action recordAudioAction;
     private final Action loadAudioAction;
 
-    public MainView(AudioSourceFactory factory) {
+    public MainView(AudioSourceFactory audioSourceFactory) {
         frame = new JFrame("Plug & Play - Core");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(600, 400);
         frame.setLayout(new BorderLayout(10, 10));
 
-        AudioRecorder recordAudioUseCase = factory.createAudioRecorder();
-        AudioLoader loadAudioUseCase = factory.createAudioLoader();
+        ViewActionFactory viewActionFactory = new ViewActionFactory(audioSourceFactory, this::log);
 
-        this.recordAudioAction = new RecordAudioAction(recordAudioUseCase, this::log);
-        this.loadAudioAction = new LoadAudioAction(this.frame, loadAudioUseCase, this::log);
+        this.recordAudioAction = viewActionFactory.createRecordAudioAction();
+        this.loadAudioAction = viewActionFactory.createLoadAudioAction(this.frame);
 
         JScrollPane logPanel = createLogPanel();
         JPanel buttonPanel = createActionPanel();
