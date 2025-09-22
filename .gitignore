@@ -1,0 +1,16 @@
+# Archivos de IntelliJ IDEA
+.idea/
+*.iml
+
+# Archivos de configuración específicos de proyecto
+*.iws
+*.ipr
+
+# Archivos de compilación
+/out/
+build/
+target/
+
+# Archivos temporales de sistema
+.DS_Store
+Thumbs.db
