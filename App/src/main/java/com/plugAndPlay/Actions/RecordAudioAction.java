@@ -1,4 +1,4 @@
-package com.plugAndPlay.Views.Actions;
+package com.plugAndPlay.Actions;
 
 import com.plugAndPlay.Interfaces.AudioRecorder;
 import org.slf4j.Logger;

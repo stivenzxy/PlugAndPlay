@@ -2,8 +2,8 @@ package com.plugAndPlay.Factories;
 
 import com.plugAndPlay.Interfaces.AudioLoader;
 import com.plugAndPlay.Interfaces.AudioRecorder;
-import com.plugAndPlay.Views.Actions.LoadAudioAction;
-import com.plugAndPlay.Views.Actions.RecordAudioAction;
+import com.plugAndPlay.Actions.LoadAudioAction;
+import com.plugAndPlay.Actions.RecordAudioAction;
 
 import javax.swing.*;
 import java.util.function.Consumer;

@@ -14,5 +14,7 @@
 
     <modules>
         <module>Core</module>
+        <module>PlayAudioPlugin</module>
+        <module>App</module>
     </modules>
 </project>

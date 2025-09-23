@@ -1,7 +1,6 @@
-package com.plugAndPlay.Views.Actions;
+package com.plugAndPlay.Actions;
 
 import com.plugAndPlay.Interfaces.AudioLoader;
-import com.plugAndPlay.UseCases.LoadAudio;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

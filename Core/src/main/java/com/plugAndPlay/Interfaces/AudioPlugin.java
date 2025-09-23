@@ -1,6 +1,7 @@
 package com.plugAndPlay.Interfaces;
 
-public interface Plugin {
+import java.util.List;
+
+public interface AudioPlugin {
     String getName();
-    void execute();
 }

@@ -1,4 +1,4 @@
-package com.plugAndPlay.Views;
+package com.plugAndPlay;
 
 import com.plugAndPlay.Factories.AudioSourceFactory;
 import com.plugAndPlay.Factories.ViewActionFactory;
