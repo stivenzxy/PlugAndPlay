@@ -13,7 +13,7 @@ import java.util.ServiceLoader;
 
 public class PluginManager {
     private final static Logger logger = LoggerFactory.getLogger(PluginManager.class);
-    private final List<Plugin> loadedPlugins = new ArrayList<Plugin>();
+    private final List<Plugin> loadedPlugins = new ArrayList<>();
 
     public void loadPlugin(File jarFile) {
         try {

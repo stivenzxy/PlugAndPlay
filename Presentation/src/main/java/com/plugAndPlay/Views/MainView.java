@@ -58,7 +58,6 @@ public class MainView {
         this.pluginDetailPanel = new JPanel(pluginCardLayout);
         pluginDetailPanel.setBorder(new TitledBorder("Paso 3: Acciones del Plugin"));
 
-        // --- 4. CREACIÓN Y ENSAMBLAJE DE PANELES ---
         JPanel actionPanel = createActionPanel(recordAudioAction, loadAudioAction);
         JSplitPane leftPanel = createLeftPanel();
         JScrollPane logPanel = createLogPanel();

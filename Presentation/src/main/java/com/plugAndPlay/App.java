@@ -7,7 +7,7 @@ import com.plugAndPlay.Views.MainView;
 
 import javax.swing.*;
 
-public class CoreApp {
+public class App {
     public static void main(String[] args) {
         EnvironmentInitializer.initEnvironment();
         AudioSourceFactory audioSourceFactory = new AudioSourceFactory();

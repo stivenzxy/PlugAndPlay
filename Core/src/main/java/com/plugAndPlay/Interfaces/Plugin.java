@@ -1,7 +1,8 @@
 package com.plugAndPlay.Interfaces;
 
-import java.util.List;
+import com.plugAndPlay.Shared.AppContext;
 
-public interface AudioPlugin {
+public interface Plugin {
     String getName();
+    void execute(AppContext context);
 }
