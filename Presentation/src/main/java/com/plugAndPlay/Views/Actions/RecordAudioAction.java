@@ -1,4 +1,4 @@
-package com.plugAndPlay.Actions;
+package com.plugAndPlay.Views.Actions;
 
 import com.plugAndPlay.Interfaces.AudioRecorder;
 import org.slf4j.Logger;
@@ -17,11 +17,13 @@ public class RecordAudioAction extends AbstractAction {
 
     private Timer timer;
     private int elapsedSeconds;
+    private final Runnable onComplete;
 
-    public RecordAudioAction(AudioRecorder recordAudioUseCase, Consumer<String> uiLogger) {
+    public RecordAudioAction(AudioRecorder recordAudioUseCase, Consumer<String> uiLogger, Runnable onComplete) {
         super("Grabar Audio");
         this.uiLogger = uiLogger;
         this.recordAudio = recordAudioUseCase;
+        this.onComplete = onComplete; // Asignar el callback
     }
 
     @Override
@@ -57,6 +59,7 @@ public class RecordAudioAction extends AbstractAction {
         File recordedAudio = recordAudio.stop();
         if (recordedAudio != null) {
             uiLogger.accept(">> Grabación guardada: " + recordedAudio);
+            onComplete.run();
         } else {
             logger.error("Se detuvo la grabación pero el stream de audio era nulo.");
             uiLogger.accept(">> Error: No se pudo obtener el audio grabado.");

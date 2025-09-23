@@ -1,4 +1,4 @@
-package com.plugAndPlay.Utils;
+package com.plugAndPlay.Environment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.plugAndPlay.Actions;
+package com.plugAndPlay.Views.Actions;
 
 import com.plugAndPlay.Interfaces.AudioLoader;
 import org.slf4j.Logger;
@@ -17,11 +17,14 @@ public class LoadAudioAction extends AbstractAction {
     private final AudioLoader loadAudioUseCase;
     private final Consumer<String> uiLogger;
 
-    public LoadAudioAction(JFrame parentFrame, AudioLoader loadAudioUseCase, Consumer<String> uiLogger) {
+    private final Runnable onComplete;
+
+    public LoadAudioAction(JFrame parentFrame, AudioLoader loadAudioUseCase, Consumer<String> uiLogger, Runnable onComplete ) {
         super("Cargar Audio");
         this.parentFrame = parentFrame;
         this.loadAudioUseCase = loadAudioUseCase;
         this.uiLogger = uiLogger;
+        this.onComplete = onComplete;
     }
 
     @Override
@@ -37,7 +40,7 @@ public class LoadAudioAction extends AbstractAction {
 
                 logger.info("Caso de uso 'LoadAudio' ejecutado con éxito para el archivo: {}", selectedFile.getName());
                 uiLogger.accept(">> Archivo guardado: " + loadedFile);
-
+                onComplete.run();
             } catch (Exception ex) {
                 logger.error("El caso de uso 'LoadAudio' falló.", ex);
                 uiLogger.accept(">> Error al cargar el archivo: " + ex.getMessage());
