@@ -1,12 +1,16 @@
-package com.plugAndPlay.Plugin;
+package com.plugAndPlay;
 
 import com.plugAndPlay.Interfaces.Plugin;
 import com.plugAndPlay.Shared.AppContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.*;
 import java.io.File;
 
 public class PlayAudioPlugin implements Plugin {
+    private static final Logger logger = LoggerFactory.getLogger(PlayAudioPlugin.class);
+
     @Override
     public String getName() {
         return "Reproducir Audio";
@@ -17,15 +21,19 @@ public class PlayAudioPlugin implements Plugin {
         String audioFilePath = context.getInputPath();
 
         if (audioFilePath == null || audioFilePath.isEmpty()) {
-            System.err.println("Error: No se especificó una ruta de archivo de audio en el contexto.");
+            logger.error("No se especificó una ruta de archivo de audio en el contexto.");
+            context.getUiLogger().accept(">> Error: No se ha cargado ningún audio para reproducir.");
             return;
         }
 
-        System.out.println("Ejecutando el plugin de reproducción para: " + audioFilePath);
+        logger.info("Ejecutando el plugin de reproducción para: {}", audioFilePath);
+        context.getUiLogger().accept(">> Iniciando reproducción de " + new File(audioFilePath).getName() + "...");
+
         File audioFile = new File(audioFilePath);
 
         if (!audioFile.exists()) {
-            System.err.println("Archivo de sesión no encontrado: " + audioFilePath);
+            logger.error("Archivo de audio no encontrado: {}", audioFilePath);
+            context.getUiLogger().accept(">> Error: El archivo de sesión no se encontró en el disco.");
             return;
         }
 
@@ -45,11 +53,11 @@ public class PlayAudioPlugin implements Plugin {
 
             audioLine.drain();
             audioLine.close();
-            System.out.println("Reproducción finalizada.");
-            context.getUiLogger().accept(">> Reproducción finalizada para " + audioFile.getName());
-
+            logger.info("Reproducción finalizada exitosamente.");
+            context.getUiLogger().accept(">> Reproducción finalizada.");
         } catch (Exception e) {
-            System.err.println("Error al reproducir el audio: " + e.getMessage());
+            logger.error("Error crítico durante la reproducción del audio.", e);
+            context.getUiLogger().accept(">> Error al reproducir el audio: " + e.getMessage());
         }
     }
 

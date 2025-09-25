@@ -1,5 +1,6 @@
 package com.plugAndPlay.Views;
 
+import com.plugAndPlay.Data.Repository.AudioRepository;
 import com.plugAndPlay.Facade.PluginManager;
 import com.plugAndPlay.Factories.AudioSourceFactory;
 import com.plugAndPlay.Factories.ViewActionFactory;
@@ -21,6 +22,8 @@ public class MainView {
     private final JTextArea messageArea;
 
     private final PluginManager pluginManager;
+    private final AudioRepository audioRepository;
+
     private final DefaultListModel<Plugin> pluginListModel;
     private final JList<Plugin> pluginJList;
     private final JPanel pluginDetailPanel;
@@ -34,8 +37,10 @@ public class MainView {
     private static final String SESSION_FILENAME = "session_audio.wav";
     private static final String SESSION_FILE_PATH = AUDIO_DIRECTORY + File.separator + SESSION_FILENAME;
 
-    public MainView(AudioSourceFactory audioSourceFactory, PluginManager pluginManager) {
+    public MainView(AudioSourceFactory audioSourceFactory, PluginManager pluginManager, AudioRepository audioRepository) {
         this.pluginManager = pluginManager;
+        this.audioRepository = audioRepository;
+
         frame = new JFrame("Plug & Play - MicroKernel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(900, 700);
@@ -130,6 +135,9 @@ public class MainView {
                 AppContext context = new AppContext();
                 context.setInputPath(SESSION_FILE_PATH);
                 context.setUiLogger(this::log);
+
+                context.registerService(AudioRepository.class, this.audioRepository);
+
                 plugin.execute(context);
             });
             individualPluginPanel.add(executeButton);
@@ -195,12 +203,3 @@ public class MainView {
     }
 }
 
-class PluginCellRenderer extends DefaultListCellRenderer {
-    @Override
-    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-        if (value instanceof Plugin) {
-            value = ((Plugin) value).getName();
-        }
-        return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-    }
-}

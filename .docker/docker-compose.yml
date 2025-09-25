@@ -1,0 +1,12 @@
+services:
+  db:
+    build: .
+
+    container_name: plugandplay-h2-db
+
+    ports:
+      - "9092:9092"
+      - "8082:8082"
+
+    volumes:
+      - ./database:/opt/h2-data

@@ -17,5 +17,6 @@
         <module>PlayAudioPlugin</module>
         <module>Presentation</module>
         <module>SaveAudioPlugin</module>
+        <module>Persistence</module>
     </modules>
 </project>

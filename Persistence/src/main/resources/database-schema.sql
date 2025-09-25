@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS audios (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    format VARCHAR(50),
+    content BLOB
+);

@@ -50,7 +50,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.plugAndPlay.Plugin.PlayAudioPlugin</mainClass>
+                            <mainClass>com.plugAndPlay.PlayAudioPlugin</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
