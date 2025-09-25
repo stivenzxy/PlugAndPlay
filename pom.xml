@@ -18,5 +18,6 @@
         <module>Presentation</module>
         <module>SaveAudioPlugin</module>
         <module>Persistence</module>
+        <module>ListAudiosFromDatabase</module>
     </modules>
 </project>

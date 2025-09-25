@@ -129,19 +129,14 @@ public class MainView {
         loadedPlugins.forEach(pluginListModel::addElement);
 
         for (Plugin plugin : loadedPlugins) {
-            JPanel individualPluginPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-            JButton executeButton = new JButton("Ejecutar '" + plugin.getName() + "'");
-            executeButton.addActionListener(e -> {
-                AppContext context = new AppContext();
-                context.setInputPath(SESSION_FILE_PATH);
-                context.setUiLogger(this::log);
-
-                context.registerService(AudioRepository.class, this.audioRepository);
-
-                plugin.execute(context);
-            });
-            individualPluginPanel.add(executeButton);
-            pluginDetailPanel.add(individualPluginPanel, plugin.getName());
+            if (plugin instanceof com.plugAndPlay.ListAudiosFromDatabasePlugin) {
+                JPanel dbPanel = createDBPluginPanel((com.plugAndPlay.ListAudiosFromDatabasePlugin) plugin);
+                pluginDetailPanel.add(dbPanel, plugin.getName());
+            } else {
+                // Para cualquier otro plugin, construimos la UI genérica
+                JPanel genericPanel = createGenericPluginPanel(plugin);
+                pluginDetailPanel.add(genericPanel, plugin.getName());
+            }
         }
 
         pluginDetailPanel.revalidate();
@@ -184,6 +179,63 @@ public class MainView {
         });
     }
 
+    private JPanel createGenericPluginPanel(Plugin plugin) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton executeButton = new JButton("Ejecutar '" + plugin.getName() + "'");
+
+        executeButton.addActionListener(e -> {
+            AppContext context = new AppContext();
+            context.setInputPath(SESSION_FILE_PATH);
+            context.setUiLogger(this::log);
+            context.registerService(AudioRepository.class, this.audioRepository);
+
+            plugin.execute(context);
+        });
+
+        panel.add(executeButton);
+        return panel;
+    }
+
+    private JPanel createDBPluginPanel(com.plugAndPlay.ListAudiosFromDatabasePlugin plugin) {
+        JPanel panel = new JPanel(new BorderLayout(5, 5));
+
+        DefaultListModel<com.plugAndPlay.Entities.Audio> listModel = new DefaultListModel<>();
+        JList<com.plugAndPlay.Entities.Audio> audioJList = new JList<>(listModel);
+        audioJList.setCellRenderer(new AudioCellRenderer());
+        panel.add(new JScrollPane(audioJList), BorderLayout.CENTER);
+
+        JButton refreshButton = new JButton("Refrescar Lista");
+        refreshButton.addActionListener(e -> {
+            listModel.clear();
+            // Llama al método público específico del plugin
+            plugin.getAudioList(this.audioRepository).forEach(listModel::addElement);
+        });
+
+        JButton loadButton = new JButton("Cargar seleccionado a la Sesión");
+        loadButton.addActionListener(e -> {
+            com.plugAndPlay.Entities.Audio selected = audioJList.getSelectedValue();
+            if (selected != null) {
+                // Llama al otro método público específico del plugin
+                boolean success = plugin.loadAudioToSessionFile(this.audioRepository, selected.getId(), SESSION_FILE_PATH);
+                if (success) {
+                    this.refreshFileTree();
+                }
+            } else {
+                JOptionPane.showMessageDialog(panel, "Por favor, seleccione un audio de la lista.", "Aviso", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(refreshButton);
+        buttonPanel.add(loadButton);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Cargar la lista al iniciar
+        refreshButton.doClick();
+
+        return panel;
+    }
+
     public void refreshFileTree() {
         rootNode.removeAllChildren();
         File audioDir = new File(AUDIO_DIRECTORY);
@@ -203,3 +255,13 @@ public class MainView {
     }
 }
 
+class AudioCellRenderer extends DefaultListCellRenderer {
+    @Override
+    public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+        if (value instanceof com.plugAndPlay.Entities.Audio) {
+            com.plugAndPlay.Entities.Audio audio = (com.plugAndPlay.Entities.Audio) value;
+            value = audio.getName() + " (ID: " + audio.getId() + ")";
+        }
+        return super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+    }
+}
