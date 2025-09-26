@@ -67,7 +67,8 @@ public class AudioToTextPlugin implements Plugin {
                 float frameRate = durStream.getFormat().getFrameRate();
                 if (frames > 0 && frameRate > 0) {
                     durationSec = frames / frameRate;
-                    timeoutSeconds = Math.max(120, (int) Math.ceil(durationSec * 5.0 + 90));
+                    timeoutSeconds = Math.max(180, (int) Math.ceil(durationSec * 8.0 + 120));
+                    uiLogger.accept(String.format(">> Audio de %.1f segundos detectado. Timeout: %d segundos", durationSec, timeoutSeconds));
                 }
             }
 
@@ -179,20 +180,25 @@ public class AudioToTextPlugin implements Plugin {
         URI serverUri = new URI(VOSK_SERVER_URL);
         StringBuilder result = new StringBuilder();
         CompletableFuture<String> processingResult = new CompletableFuture<>();
+        boolean[] eofSent = {false};
+        long[] lastMessageTime = {System.currentTimeMillis()};
+        String[] lastPartialResult = {""};
         
         WebSocketClient client = new WebSocketClient(serverUri) {
             @Override
             public void onOpen(ServerHandshake handshake) {
                 logger.info("Conectado al servidor Vosk");
                 try (AudioInputStream pcmStream = AudioSystem.getAudioInputStream(audioFile)) {
-                    String config = "{\"config\": {\"sample_rate\": " + SAMPLE_RATE + ", \"words\": true}}";
+                    String config = "{\"config\": {\"sample_rate\": " + SAMPLE_RATE + ", \"words\": true, \"partial\": true, \"max_alternatives\": 0}}";
                     send(config);
+                    logger.info("Configuración enviada al servidor: {}", config);
                     
-                    Thread.sleep(100);
+                    Thread.sleep(200);
 
-                    byte[] buffer = new byte[4096];
+                    byte[] buffer = new byte[2048];
                     int read;
                     int totalSent = 0;
+                    int chunkCount = 0;
                     
                     while ((read = pcmStream.read(buffer)) != -1) {
                         if (read > 0) {
@@ -201,14 +207,40 @@ public class AudioToTextPlugin implements Plugin {
                             send(chunk);
                             totalSent += read;
                             
-                            if (totalSent % (4096 * 10) == 0) {
-                                Thread.sleep(50);
+                            if (++chunkCount % 5 == 0) {
+                                Thread.sleep(100);
                             }
                         }
                     }
                     
-                    Thread.sleep(500);
+                    logger.info("Enviado total de {} bytes de audio al servidor", totalSent);
+                    
+                    logger.info("Enviando silencio final para completar procesamiento");
+                    byte[] silence = new byte[1024];
+                    for (int i = 0; i < 3; i++) {
+                        send(silence);
+                        Thread.sleep(100);
+                    }
+                    
+                    Thread.sleep(1000);
                     send("{\"eof\": 1}");
+                    eofSent[0] = true;
+                    logger.info("EOF enviado al servidor Vosk");
+                    
+                    Thread.sleep(3000);
+                    
+                    logger.info("Enviando mensaje de flush final al servidor Vosk");
+                    send("{\"flush\": true}");
+                    
+                    Thread.sleep(2000);
+                    
+                    String currentResult = result.toString().trim();
+                    String finalResult = concatenatePartialResult(currentResult, lastPartialResult[0]);
+                    
+                    if (!finalResult.equals(currentResult)) {
+                        logger.info("Agregando último resultado parcial al final: '{}'", lastPartialResult[0]);
+                        processingResult.complete(finalResult);
+                    }
 
                 } catch (Exception e) {
                     logger.error("Error enviando audio al servidor Vosk", e);
@@ -219,15 +251,47 @@ public class AudioToTextPlugin implements Plugin {
             @Override
             public void onMessage(String message) {
                 try {
+                    lastMessageTime[0] = System.currentTimeMillis();
                     JsonNode jsonResponse = objectMapper.readTree(message);
+                    
                     if (jsonResponse.has("text")) {
                         String text = jsonResponse.get("text").asText();
                         if (!text.trim().isEmpty()) {
                             result.append(text).append(" ");
+                            logger.info("Texto confirmado recibido: '{}'", text);
+                        }
+                    }
+                    
+                    if (jsonResponse.has("partial")) {
+                        String partialText = jsonResponse.get("partial").asText();
+                        if (!partialText.trim().isEmpty()) {
+                            lastPartialResult[0] = partialText;
+                        }
+                    }
+                    
+                    if (eofSent[0]) {
+                        if (eofSent[0]) {
+                        if (jsonResponse.has("text")) {
+                            String finalText = jsonResponse.get("text").asText();
+                            if (!finalText.trim().isEmpty()) {
+                                String currentResult = result.toString();
+                                if (!currentResult.contains(finalText.trim())) {
+                                    result.append(finalText).append(" ");
+                                }
+                            }
+                        }
+                        
+                        if (System.currentTimeMillis() - lastMessageTime[0] > 5000) {
+                            if (!processingResult.isDone()) {
+                                logger.info("Timeout después de EOF - completando resultado");
+                                String confirmedResult = result.toString().trim();
+                                String finalResult = concatenatePartialResult(confirmedResult, lastPartialResult[0]);
+                                processingResult.complete(finalResult);
+                            }
                         }
                     }
                 } catch (Exception e) {
-                    logger.error("Error procesando respuesta del servidor Vosk", e);
+                    logger.error("Error procesando respuesta del servidor Vosk: {}", message, e);
                 }
             }
 
@@ -236,11 +300,20 @@ public class AudioToTextPlugin implements Plugin {
                 logger.info("Conexión cerrada con servidor Vosk: {} - {}", code, reason);
                 if (!processingResult.isDone()) {
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(3000);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
-                    processingResult.complete(result.toString().trim());
+                    
+                    String confirmedResult = result.toString().trim();
+                    String finalResult = concatenatePartialResult(confirmedResult, lastPartialResult[0]);
+                    
+                    if (!finalResult.equals(confirmedResult)) {
+                        logger.info("Conexión cerrada - agregando último resultado parcial al final: '{}'", lastPartialResult[0]);
+                    }
+                    logger.info("Resultado final del procesamiento: length={}, content='{}'", 
+                               finalResult.length(), finalResult);
+                    processingResult.complete(finalResult);
                 }
             }
 
@@ -254,15 +327,39 @@ public class AudioToTextPlugin implements Plugin {
         client.connect();
         
         try {
-            return processingResult.get(timeoutSeconds, TimeUnit.SECONDS);
+            String finalResult = processingResult.get(timeoutSeconds, TimeUnit.SECONDS);
+            
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            return finalResult;
         } finally {
-            client.close();
+            if (client.isOpen()) {
+                client.close();
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
     }
 
     private void saveTextToFile(String text, String outputPath) throws IOException {
         logger.info("Guardando texto extraído en: {}", outputPath);
         Files.write(Paths.get(outputPath), text.getBytes("UTF-8"));
+    }
+    
+    private String concatenatePartialResult(String confirmedResult, String partialResult) {
+        if (confirmedResult.isEmpty()) {
+            return partialResult;
+        } else if (!partialResult.isEmpty() && !confirmedResult.contains(partialResult)) {
+            return confirmedResult + " " + partialResult;
+        }
+        return confirmedResult;
     }
 
     public static void main(String[] args) {
@@ -279,3 +376,4 @@ public class AudioToTextPlugin implements Plugin {
         plugin.execute(consoleContext);
     }
 }
+

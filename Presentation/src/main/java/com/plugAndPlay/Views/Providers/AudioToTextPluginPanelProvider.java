@@ -61,10 +61,12 @@ public class AudioToTextPluginPanelProvider implements PluginPanelProvider {
                 if (message.startsWith(">> ") && !message.contains("Texto extraído exitosamente:") && 
                     !message.contains("Error:") && !message.contains("Iniciando") && 
                     !message.contains("Pasando") && !message.contains("guardado") &&
-                    !message.contains("Carpeta") && !message.contains("Audio de")) {
+                    !message.contains("Carpeta") && !message.contains("Audio de") &&
+                    !message.contains("Convirtiendo") && !message.contains("detectado") &&
+                    !message.contains("Timeout:") && !message.contains("extraído exitosamente")) {
                     
                     String text = message.substring(3);
-                    if (!text.trim().isEmpty() && !text.contains("extraído exitosamente")) {
+                    if (!text.trim().isEmpty()) {
                         SwingUtilities.invokeLater(() -> {
                             resultArea.setText(text.trim());
                             resultArea.setCaretPosition(0);
