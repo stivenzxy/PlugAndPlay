@@ -19,5 +19,8 @@
         <module>SaveAudioPlugin</module>
         <module>Persistence</module>
         <module>ListAudiosFromDatabase</module>
+        <module>AudioToTextPlugin</module>
+        <module>TextToAudioPlugin</module>
+        <module>SearchTextPlugin</module>
     </modules>
 </project>

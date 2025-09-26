@@ -10,3 +10,13 @@ services:
 
     volumes:
       - ./database:/opt/h2-data
+
+  vosk-server:
+    image: alphacep/kaldi-es:latest
+    
+    container_name: plugandplay-vosk-server
+    
+    ports:
+      - "2700:2700"
+    
+    restart: unless-stopped

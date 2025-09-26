@@ -40,6 +40,8 @@ public class MainView {
     public MainView(AudioSourceFactory audioSourceFactory, PluginManager pluginManager, AudioRepository audioRepository) {
         this.pluginManager = pluginManager;
         this.audioRepository = audioRepository;
+        
+        pluginManager.setUiLogger(this::log);
 
         frame = new JFrame("Plug & Play - MicroKernel");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -129,13 +131,16 @@ public class MainView {
         loadedPlugins.forEach(pluginListModel::addElement);
 
         for (Plugin plugin : loadedPlugins) {
-            if (plugin instanceof com.plugAndPlay.ListAudiosFromDatabasePlugin) {
-                JPanel dbPanel = createDBPluginPanel((com.plugAndPlay.ListAudiosFromDatabasePlugin) plugin);
-                pluginDetailPanel.add(dbPanel, plugin.getName());
-            } else {
-                // Para cualquier otro plugin, construimos la UI genérica
-                JPanel genericPanel = createGenericPluginPanel(plugin);
-                pluginDetailPanel.add(genericPanel, plugin.getName());
+            try {
+                if (plugin instanceof com.plugAndPlay.ListAudiosFromDatabasePlugin) {
+                    JPanel dbPanel = createDBPluginPanel((com.plugAndPlay.ListAudiosFromDatabasePlugin) plugin);
+                    pluginDetailPanel.add(dbPanel, plugin.getName());
+                } else {
+                    JPanel genericPanel = createGenericPluginPanel(plugin);
+                    pluginDetailPanel.add(genericPanel, plugin.getName());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
 
@@ -144,6 +149,8 @@ public class MainView {
 
         if (!loadedPlugins.isEmpty()) {
             pluginJList.setSelectedIndex(0);
+            Plugin first = loadedPlugins.get(0);
+            pluginCardLayout.show(pluginDetailPanel, first.getName());
         }
     }
 
