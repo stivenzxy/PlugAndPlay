@@ -57,10 +57,16 @@ public class SearchTextPlugin implements Plugin {
             String searchQuery = context.getSearchQuery();
             
             if (searchQuery == null || searchQuery.trim().isEmpty()) {
-                searchQuery = promptUserForSearchQuery();
-                
-                if (searchQuery == null || searchQuery.trim().isEmpty()) {
-                    uiLogger.accept(">> Búsqueda cancelada por el usuario");
+                if (isConsoleMode()) {
+                    searchQuery = promptUserForSearchQuery();
+                    
+                    if (searchQuery == null || searchQuery.trim().isEmpty()) {
+                        uiLogger.accept(">> Búsqueda cancelada por el usuario");
+                        return;
+                    }
+                } else {
+                    uiLogger.accept(">> Error: No se proporcionó texto para buscar");
+                    uiLogger.accept(">> Use la interfaz gráfica para ingresar el texto de búsqueda");
                     return;
                 }
             }
@@ -79,6 +85,11 @@ public class SearchTextPlugin implements Plugin {
             uiLogger.accept(">> Error durante la búsqueda: " + e.getMessage());
             logger.error("Error crítico durante la búsqueda", e);
         }
+    }
+
+    private boolean isConsoleMode() {
+        return System.getProperty("java.awt.headless", "false").equals("true") || 
+               !java.awt.GraphicsEnvironment.isHeadless();
     }
 
     private String promptUserForSearchQuery() {

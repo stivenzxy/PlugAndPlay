@@ -50,11 +50,14 @@ public class TextToAudioPlugin implements Plugin {
 
             uiLogger.accept(">> Texto encontrado: " + text);
             
-            String outputPath = promptUserForOutputPath();
-            
-            if (outputPath == null) {
-                uiLogger.accept(">> Generación de audio cancelada por el usuario");
-                return;
+            String outputPath = context.getOutputPath();
+            if (outputPath == null || outputPath.isEmpty()) {
+                outputPath = promptUserForOutputPath();
+                
+                if (outputPath == null) {
+                    uiLogger.accept(">> Generación de audio cancelada por el usuario");
+                    return;
+                }
             }
             
             uiLogger.accept(">> Configurando sintetizador de voz...");

@@ -9,7 +9,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.function.Consumer;
 
-public class SearchTextPluginPanelProvider implements PluginPanelProvider {
+public class TextToAudioPluginPanelProvider implements PluginPanelProvider {
     private final Consumer<String> logger;
     private final AudioRepository audioRepository;
 
@@ -17,7 +17,7 @@ public class SearchTextPluginPanelProvider implements PluginPanelProvider {
     private static final String SESSION_FILENAME = "session_audio.wav";
     private static final String SESSION_FILE_PATH = AUDIO_DIRECTORY + File.separator + SESSION_FILENAME;
 
-    public SearchTextPluginPanelProvider(Consumer<String> logger, AudioRepository audioRepository) {
+    public TextToAudioPluginPanelProvider(Consumer<String> logger, AudioRepository audioRepository) {
         this.logger = logger;
         this.audioRepository = audioRepository;
     }
@@ -26,18 +26,9 @@ public class SearchTextPluginPanelProvider implements PluginPanelProvider {
     public JPanel createPanel(Plugin plugin) {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         
-        JPanel topPanel = new JPanel(new BorderLayout(5, 5));
-        
-        JPanel inputPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        JLabel searchLabel = new JLabel("Texto a buscar:");
-        JTextField searchField = new JTextField(20);
+        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton executeButton = new JButton("Ejecutar '" + plugin.getName() + "'");
-        
-        inputPanel.add(searchLabel);
-        inputPanel.add(searchField);
-        inputPanel.add(executeButton);
-        
-        topPanel.add(inputPanel, BorderLayout.NORTH);
+        topPanel.add(executeButton);
         panel.add(topPanel, BorderLayout.NORTH);
         
         JTextArea resultArea = new JTextArea(10, 50);
@@ -45,65 +36,47 @@ public class SearchTextPluginPanelProvider implements PluginPanelProvider {
         resultArea.setWrapStyleWord(true);
         resultArea.setLineWrap(true);
         resultArea.setBackground(new Color(248, 248, 248));
-        resultArea.setBorder(BorderFactory.createTitledBorder("Resultados de búsqueda:"));
-        resultArea.setText("Los resultados de búsqueda aparecerán aquí...");
+        resultArea.setBorder(BorderFactory.createTitledBorder("Información y resultados:"));
+        resultArea.setText("Los resultados de la conversión aparecerán aquí...");
         
         JScrollPane scrollPane = new JScrollPane(resultArea);
         scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
         panel.add(scrollPane, BorderLayout.CENTER);
         
         executeButton.addActionListener(e -> {
-            String searchText = searchField.getText().trim();
-            if (searchText.isEmpty()) {
-                resultArea.setText("Por favor, ingrese un texto para buscar.");
-                return;
-            }
-            
-            resultArea.setText("Procesando búsqueda...");
+            resultArea.setText("Procesando conversión de texto a audio...");
             
             AppContext context = new AppContext();
             context.setInputPath("Texto/session_text.txt");
-            context.setSearchQuery(searchText);
+            context.setOutputPath("Audio/audio_generado.wav");
             context.registerService(AudioRepository.class, audioRepository);
             
             context.setUiLogger(message -> {
-                if (message.contains("Iniciando búsqueda") ||
+                if (message.contains("Iniciando conversión") ||
+                    message.contains("Texto encontrado") ||
+                    message.contains("Configurando sintetizador") ||
+                    message.contains("Guardando en") ||
+                    message.contains("Audio generado exitosamente") ||
                     message.contains("Error:") ||
-                    message.contains("Búsqueda cancelada")) {
+                    message.contains("Generación de audio cancelada")) {
                     logger.accept(message);
                 }
                 
-                if (message.contains("========== RESULTADOS DE BÚSQUEDA ==========") ||
-                    message.contains("COINCIDENCIAS EXACTAS") ||
-                    message.contains("COINCIDENCIAS SIMILARES") ||
-                    message.contains("No se encontraron coincidencias") ||
-                    message.contains("Sugerencias:") ||
-                    message.contains("==========================================") ||
-                    (message.startsWith(">>   ") && (message.contains("Posición") || message.contains("Palabra similar")))) {
+                if (message.contains("Texto encontrado") ||
+                    message.contains("Audio generado exitosamente") ||
+                    message.contains("Error:") ||
+                    message.contains("Generación de audio cancelada") ||
+                    message.contains("No se pudo generar")) {
                     
                     SwingUtilities.invokeLater(() -> {
                         String currentText = resultArea.getText();
-                        if (currentText.equals("Procesando búsqueda...")) {
+                        if (currentText.equals("Procesando conversión de texto a audio...")) {
                             resultArea.setText("");
                         }
                         
                         String cleanMessage = message.startsWith(">> ") ? message.substring(3) : message;
                         resultArea.append(cleanMessage + "\n");
                         resultArea.setCaretPosition(resultArea.getDocument().getLength());
-                    });
-                }
-                
-                if (message.contains("Error:") && !message.contains("No se encontró archivo de texto")) {
-                    SwingUtilities.invokeLater(() -> {
-                        String cleanMessage = message.startsWith(">> ") ? message.substring(3) : message;
-                        resultArea.setText("Error: " + cleanMessage);
-                    });
-                }
-                
-                if (message.contains("No se encontró archivo de texto")) {
-                    SwingUtilities.invokeLater(() -> {
-                        resultArea.setText("Error: No se encontró archivo de texto.\n" +
-                                        "Ejecute primero el plugin 'Extraer Texto del Audio' para generar el archivo de texto.");
                     });
                 }
             });

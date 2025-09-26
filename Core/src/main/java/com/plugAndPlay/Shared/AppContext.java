@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 public class AppContext {
     private String inputPath;
     private String searchQuery;
+    private String outputPath;
     private Consumer<String> uiLogger = (msg) -> {};
 
     private final Map<Class<?>, Object> services = new HashMap<>();
@@ -15,6 +16,8 @@ public class AppContext {
     public void setInputPath(String inputPath) { this.inputPath = inputPath; }
     public String getSearchQuery() { return searchQuery; }
     public void setSearchQuery(String searchQuery) { this.searchQuery = searchQuery; }
+    public String getOutputPath() { return outputPath; }
+    public void setOutputPath(String outputPath) { this.outputPath = outputPath; }
     public Consumer<String> getUiLogger() { return uiLogger; }
     public void setUiLogger(Consumer<String> uiLogger) { this.uiLogger = uiLogger; }
 
