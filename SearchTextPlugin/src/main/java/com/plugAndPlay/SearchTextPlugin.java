@@ -29,18 +29,24 @@ public class SearchTextPlugin implements Plugin {
         var uiLogger = context.getUiLogger();
         
         uiLogger.accept(">> Iniciando búsqueda de texto...");
-        File textFile = new File(SESSION_TEXT_PATH);
+        
+        String textFilePath = context.getInputPath();
+        if (textFilePath == null || textFilePath.isEmpty()) {
+            textFilePath = SESSION_TEXT_PATH;
+        }
+
+        File textFile = new File(textFilePath);
         if (!textFile.exists()) {
-            uiLogger.accept(">> Error: No se encontró archivo de texto. Ejecute primero 'Extraer Texto del Audio'");
-            logger.error("Archivo de texto de sesión no encontrado: {}", SESSION_TEXT_PATH);
+            uiLogger.accept(">> Error: No se encontró el archivo de texto: " + textFilePath);
+            logger.error("Archivo de texto no encontrado: {}", textFilePath);
             return;
         }
 
         try {
-            String content = Files.readString(Paths.get(SESSION_TEXT_PATH)).trim();
+            String content = Files.readString(Paths.get(textFilePath)).trim();
             if (content.isEmpty()) {
                 uiLogger.accept(">> Error: El archivo de texto está vacío");
-                logger.warn("Archivo de texto vacío: {}", SESSION_TEXT_PATH);
+                logger.warn("Archivo de texto vacío: {}", textFilePath);
                 return;
             }
 
@@ -48,11 +54,15 @@ public class SearchTextPlugin implements Plugin {
             uiLogger.accept(">> \"" + content + "\"");
             uiLogger.accept(">> Longitud: " + content.length() + " caracteres");
             
-            String searchQuery = promptUserForSearchQuery();
+            String searchQuery = context.getSearchQuery();
             
             if (searchQuery == null || searchQuery.trim().isEmpty()) {
-                uiLogger.accept(">> Búsqueda cancelada por el usuario");
-                return;
+                searchQuery = promptUserForSearchQuery();
+                
+                if (searchQuery == null || searchQuery.trim().isEmpty()) {
+                    uiLogger.accept(">> Búsqueda cancelada por el usuario");
+                    return;
+                }
             }
             
             searchQuery = searchQuery.trim();
@@ -201,6 +211,19 @@ public class SearchTextPlugin implements Plugin {
     public static void main(String[] args) {
         AppContext consoleContext = new AppContext();
         consoleContext.setUiLogger(System.out::println);
+
+        if (args.length > 0) {
+            consoleContext.setInputPath(args[0]);
+            System.out.println(">> Usando archivo de texto: " + args[0]);
+            
+            if (args.length > 1) {
+                consoleContext.setSearchQuery(args[1]);
+                System.out.println(">> Buscando: \"" + args[1] + "\"");
+            }
+        } else {
+            System.out.println(">> Usando archivo de texto por defecto: " + SESSION_TEXT_PATH);
+            System.out.println(">> Uso: java -jar SearchTextPlugin.jar [ruta_al_archivo.txt] [texto_a_buscar]");
+        }
 
         SearchTextPlugin plugin = new SearchTextPlugin();
         plugin.execute(consoleContext);

@@ -40,7 +40,6 @@ public class AudioToTextPlugin implements Plugin {
             return;
         }
 
-        logger.info("Ejecutando el plugin de extracción de texto para: {}", audioFilePath);
         uiLogger.accept(">> Iniciando extracción de texto de " + new File(audioFilePath).getName() + "...");
 
         File audioFile = new File(audioFilePath);
@@ -89,7 +88,6 @@ public class AudioToTextPlugin implements Plugin {
                 uiLogger.accept(">> Texto extraído exitosamente:");
                 uiLogger.accept(">> " + extractedText);
                 uiLogger.accept(">> Texto guardado en: " + textFilePath);
-                logger.info("Extracción de texto completada. Texto guardado en: {}", textFilePath);
             } else {
                 uiLogger.accept(">> No se pudo extraer texto del audio o el audio no contiene palabras reconocibles.");
                 logger.warn("No se extrajo texto del archivo: {}", audioFilePath);
@@ -175,7 +173,6 @@ public class AudioToTextPlugin implements Plugin {
     }
 
     private String processAudioWithVosk(File audioFile, int timeoutSeconds) throws Exception {
-        logger.info("Procesando audio con servidor Vosk");
         
         URI serverUri = new URI(VOSK_SERVER_URL);
         StringBuilder result = new StringBuilder();
@@ -187,11 +184,9 @@ public class AudioToTextPlugin implements Plugin {
         WebSocketClient client = new WebSocketClient(serverUri) {
             @Override
             public void onOpen(ServerHandshake handshake) {
-                logger.info("Conectado al servidor Vosk");
                 try (AudioInputStream pcmStream = AudioSystem.getAudioInputStream(audioFile)) {
                     String config = "{\"config\": {\"sample_rate\": " + SAMPLE_RATE + ", \"words\": true, \"partial\": true, \"max_alternatives\": 0}}";
                     send(config);
-                    logger.info("Configuración enviada al servidor: {}", config);
                     
                     Thread.sleep(200);
 
@@ -213,9 +208,6 @@ public class AudioToTextPlugin implements Plugin {
                         }
                     }
                     
-                    logger.info("Enviado total de {} bytes de audio al servidor", totalSent);
-                    
-                    logger.info("Enviando silencio final para completar procesamiento");
                     byte[] silence = new byte[1024];
                     for (int i = 0; i < 3; i++) {
                         send(silence);
@@ -225,11 +217,9 @@ public class AudioToTextPlugin implements Plugin {
                     Thread.sleep(1000);
                     send("{\"eof\": 1}");
                     eofSent[0] = true;
-                    logger.info("EOF enviado al servidor Vosk");
                     
                     Thread.sleep(3000);
                     
-                    logger.info("Enviando mensaje de flush final al servidor Vosk");
                     send("{\"flush\": true}");
                     
                     Thread.sleep(2000);
@@ -238,7 +228,6 @@ public class AudioToTextPlugin implements Plugin {
                     String finalResult = concatenatePartialResult(currentResult, lastPartialResult[0]);
                     
                     if (!finalResult.equals(currentResult)) {
-                        logger.info("Agregando último resultado parcial al final: '{}'", lastPartialResult[0]);
                         processingResult.complete(finalResult);
                     }
 
@@ -258,7 +247,6 @@ public class AudioToTextPlugin implements Plugin {
                         String text = jsonResponse.get("text").asText();
                         if (!text.trim().isEmpty()) {
                             result.append(text).append(" ");
-                            logger.info("Texto confirmado recibido: '{}'", text);
                         }
                     }
                     
@@ -270,7 +258,6 @@ public class AudioToTextPlugin implements Plugin {
                     }
                     
                     if (eofSent[0]) {
-                        if (eofSent[0]) {
                         if (jsonResponse.has("text")) {
                             String finalText = jsonResponse.get("text").asText();
                             if (!finalText.trim().isEmpty()) {
@@ -283,7 +270,6 @@ public class AudioToTextPlugin implements Plugin {
                         
                         if (System.currentTimeMillis() - lastMessageTime[0] > 5000) {
                             if (!processingResult.isDone()) {
-                                logger.info("Timeout después de EOF - completando resultado");
                                 String confirmedResult = result.toString().trim();
                                 String finalResult = concatenatePartialResult(confirmedResult, lastPartialResult[0]);
                                 processingResult.complete(finalResult);
@@ -297,7 +283,6 @@ public class AudioToTextPlugin implements Plugin {
 
             @Override
             public void onClose(int code, String reason, boolean remote) {
-                logger.info("Conexión cerrada con servidor Vosk: {} - {}", code, reason);
                 if (!processingResult.isDone()) {
                     try {
                         Thread.sleep(3000);
@@ -308,11 +293,6 @@ public class AudioToTextPlugin implements Plugin {
                     String confirmedResult = result.toString().trim();
                     String finalResult = concatenatePartialResult(confirmedResult, lastPartialResult[0]);
                     
-                    if (!finalResult.equals(confirmedResult)) {
-                        logger.info("Conexión cerrada - agregando último resultado parcial al final: '{}'", lastPartialResult[0]);
-                    }
-                    logger.info("Resultado final del procesamiento: length={}, content='{}'", 
-                               finalResult.length(), finalResult);
                     processingResult.complete(finalResult);
                 }
             }
@@ -349,7 +329,6 @@ public class AudioToTextPlugin implements Plugin {
     }
 
     private void saveTextToFile(String text, String outputPath) throws IOException {
-        logger.info("Guardando texto extraído en: {}", outputPath);
         Files.write(Paths.get(outputPath), text.getBytes("UTF-8"));
     }
     
