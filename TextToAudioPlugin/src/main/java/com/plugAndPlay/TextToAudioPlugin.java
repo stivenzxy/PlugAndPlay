@@ -27,18 +27,24 @@ public class TextToAudioPlugin implements Plugin {
         
         uiLogger.accept(">> Iniciando conversión de texto a audio...");
 
-        File textFile = new File(SESSION_TEXT_PATH);
+        // Determinar la ruta del archivo de texto
+        String textFilePath = context.getInputPath();
+        if (textFilePath == null || textFilePath.isEmpty()) {
+            textFilePath = SESSION_TEXT_PATH;
+        }
+
+        File textFile = new File(textFilePath);
         if (!textFile.exists()) {
-            uiLogger.accept(">> Error: No se encontró texto de sesión. Ejecute primero 'Extraer Texto del Audio'");
-            logger.error("Archivo de texto de sesión no encontrado: {}", SESSION_TEXT_PATH);
+            uiLogger.accept(">> Error: No se encontró el archivo de texto: " + textFilePath);
+            logger.error("Archivo de texto no encontrado: {}", textFilePath);
             return;
         }
 
         try {
-            String text = Files.readString(Paths.get(SESSION_TEXT_PATH)).trim();
+            String text = Files.readString(Paths.get(textFilePath)).trim();
             if (text.isEmpty()) {
                 uiLogger.accept(">> Error: El archivo de texto está vacío");
-                logger.warn("Archivo de texto vacío: {}", SESSION_TEXT_PATH);
+                logger.warn("Archivo de texto vacío: {}", textFilePath);
                 return;
             }
 
@@ -67,7 +73,6 @@ public class TextToAudioPlugin implements Plugin {
                 context.setInputPath(outputPath);
                 
                 uiLogger.accept(">> Audio generado exitosamente en: " + outputPath);
-                uiLogger.accept(">> Puede reproducir el audio con el plugin 'Reproducir Audio'");
                 logger.info("Audio generado correctamente en: {}", outputPath);
             } else {
                 uiLogger.accept(">> Error: No se pudo generar el archivo de audio");
@@ -118,6 +123,7 @@ public class TextToAudioPlugin implements Plugin {
                     "powershell", "-Command",
                     "Add-Type -AssemblyName System.Speech; " +
                     "$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
+                    "$synth.Rate = -1; " +
                     "$synth.SetOutputToWaveFile('" + outputPath + "'); " +
                     "$synth.Speak('" + text.replace("'", "''") + "'); " +
                     "$synth.Dispose()"
@@ -128,7 +134,7 @@ public class TextToAudioPlugin implements Plugin {
                 return exitCode == 0;
             } else {
                 uiLogger.accept(">> Usando espeak...");
-                String[] command = {"espeak", "-s", "150", "-v", "es", "-w", outputPath, text};
+                String[] command = {"espeak", "-s", "120", "-v", "es", "-w", outputPath, text};
                 Process process = Runtime.getRuntime().exec(command);
                 int exitCode = process.waitFor();
                 return exitCode == 0;
@@ -153,6 +159,7 @@ public class TextToAudioPlugin implements Plugin {
                     "powershell -Command \"" +
                     "Add-Type -AssemblyName System.Speech; " +
                     "$synth = New-Object System.Speech.Synthesis.SpeechSynthesizer; " +
+                    "$synth.Rate = -1; " +
                     "$synth.SetOutputToWaveFile('" + outputPath + "'); " +
                     "$synth.Speak('" + text.replace("\"", "'") + "'); " +
                     "$synth.Dispose()\""
@@ -174,6 +181,14 @@ public class TextToAudioPlugin implements Plugin {
     public static void main(String[] args) {
         AppContext consoleContext = new AppContext();
         consoleContext.setUiLogger(System.out::println);
+
+        if (args.length > 0) {
+            consoleContext.setInputPath(args[0]);
+            System.out.println(">> Usando archivo de texto: " + args[0]);
+        } else {
+            System.out.println(">> Usando archivo de texto por defecto: " + SESSION_TEXT_PATH);
+            System.out.println(">> Uso: java -jar TextToAudioPlugin.jar [ruta_al_archivo.txt]");
+        }
 
         TextToAudioPlugin plugin = new TextToAudioPlugin();
         plugin.execute(consoleContext);
