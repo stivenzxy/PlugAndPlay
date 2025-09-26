@@ -4,7 +4,9 @@ import com.plugAndPlay.Data.Repository.AudioRepository;
 import com.plugAndPlay.Data.Repository.AudioRepositoryImpl;
 import com.plugAndPlay.Entities.Audio;
 import com.plugAndPlay.Entities.AudioData;
+import com.plugAndPlay.Interfaces.AudioListListener;
 import com.plugAndPlay.Interfaces.Plugin;
+import com.plugAndPlay.Interfaces.SelectedAudioProvider;
 import com.plugAndPlay.Shared.AppContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Scanner;
+import java.util.function.Consumer;
 
 public class ListAudiosFromDatabasePlugin implements Plugin {
     private static final Logger logger = LoggerFactory.getLogger(ListAudiosFromDatabasePlugin.class);
@@ -30,7 +33,46 @@ public class ListAudiosFromDatabasePlugin implements Plugin {
 
     @Override
     public void execute(AppContext context) {
-        context.getUiLogger().accept(">> Plugin '" + getName() + "' seleccionado. Use los botones en el panel para interactuar.");
+        Consumer<String> uiLogger = context.getUiLogger();
+        AudioRepository repository = context.getService(AudioRepository.class);
+        if (repository == null) {
+            uiLogger.accept("Error: No se encontró el servicio AudioRepository en el contexto.");
+            return;
+        }
+
+        // Obtener lista
+        List<Audio> audioList = getAudioList(repository);
+
+        // Intentar entregar la lista a un listener (si existe)
+        AudioListListener listListener = context.getService(AudioListListener.class);
+        if (listListener != null) {
+            try {
+                listListener.onAudioList(audioList);
+            } catch (Exception ex) {
+                logger.error("Error notificando AudioListListener", ex);
+                uiLogger.accept("Error: al notificar la lista de audios: " + ex.getMessage());
+            }
+        } else {
+            uiLogger.accept("========== LISTA DE AUDIOS DISPONIBLES ==========");
+            for (Audio a : audioList) {
+                uiLogger.accept(">> ID: " + a.getId() + ", Nombre: " + a.getName() + ", Formato: " + a.getFormat());
+            }
+            uiLogger.accept("===============================================");
+        }
+
+        SelectedAudioProvider selectedProvider = context.getService(SelectedAudioProvider.class);
+        if (selectedProvider != null) {
+            Long selectedId = selectedProvider.getSelectedAudioId();
+            if (selectedId != null) {
+                uiLogger.accept("Iniciando carga del audio seleccionado (ID " + selectedId + ") ...");
+                boolean ok = loadAudioToSessionFile(repository, selectedId, "Audio" + File.separator + "session_audio.wav");
+                if (ok) {
+                    uiLogger.accept("Éxito: audio cargado en 'Audio/session_audio.wav'");
+                } else {
+                    uiLogger.accept("Error: No se pudo cargar audio con ID " + selectedId);
+                }
+            }
+        }
     }
 
     public List<Audio> getAudioList(AudioRepository repository) {
@@ -75,6 +117,7 @@ public class ListAudiosFromDatabasePlugin implements Plugin {
         logger.info("Bytes de audio escritos correctamente en {}", sessionFilePath);
     }
 
+
     public static void main(String[] args) {
         System.out.println("--- Ejecutando plugin 'Listar y Cargar desde BD' en modo consola ---");
 
@@ -96,7 +139,7 @@ public class ListAudiosFromDatabasePlugin implements Plugin {
             System.out.print("\n> Ingrese el ID del audio que desea cargar a la sesión: ");
             long selectedId = scanner.nextLong();
 
-            boolean success = plugin.loadAudioToSessionFile(repository, selectedId, "Audio/session_audio.wav");
+            boolean success = plugin.loadAudioToSessionFile(repository, selectedId, "Audio" + File.separator + "session_audio.wav");
 
             if (success) {
                 System.out.println("\nÉxito: El audio con ID " + selectedId + " ha sido guardado en 'Audio/session_audio.wav'");

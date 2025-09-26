@@ -18,7 +18,6 @@
             <version>${project.parent.version}</version>
         </dependency>
 
-        <!-- External dependencies -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -33,12 +32,6 @@
         <dependency>
             <groupId>com.plugAndPlay</groupId>
             <artifactId>Persistence</artifactId>
-            <version>1.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.plugAndPlay</groupId>
-            <artifactId>ListAudiosFromDatabase</artifactId>
             <version>1.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
