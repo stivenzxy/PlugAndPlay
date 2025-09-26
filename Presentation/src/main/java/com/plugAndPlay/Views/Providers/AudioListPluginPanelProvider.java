@@ -35,8 +35,12 @@ public class AudioListPluginPanelProvider implements PluginPanelProvider {
 
         JButton refreshButton = new JButton("Refrescar Lista");
         refreshButton.addActionListener(e -> {
-            listModel.clear();
-            dbPlugin.getAudioList(this.audioRepository).forEach(listModel::addElement);
+            try {
+                listModel.clear();
+                dbPlugin.getAudioList(this.audioRepository).forEach(listModel::addElement);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(panel, "Error al cargar la lista de audios: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
 
         JButton loadButton = getJButton(audioJList, dbPlugin, panel);
@@ -45,7 +49,12 @@ public class AudioListPluginPanelProvider implements PluginPanelProvider {
         buttonPanel.add(refreshButton);
         buttonPanel.add(loadButton);
         panel.add(buttonPanel, BorderLayout.SOUTH);
-        refreshButton.doClick();
+        
+        try {
+            refreshButton.doClick();
+        } catch (Exception ex) {
+            listModel.addElement(null);
+        }
 
         return panel;
     }

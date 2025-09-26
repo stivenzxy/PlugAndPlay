@@ -121,7 +121,6 @@ public class MainView {
             File jarFile = chooser.getSelectedFile();
             pluginManager.loadPlugin(jarFile);
             refreshPluginList();
-            log(">> Plugins cargados desde: " + jarFile.getName());
         }
     }
 
@@ -132,11 +131,15 @@ public class MainView {
         List<Plugin> loadedPlugins = pluginManager.getLoadedPlugins();
         loadedPlugins.forEach(pluginListModel::addElement);
 
-        // ¡Lógica de creación de UI simplificada!
         for (Plugin plugin : loadedPlugins) {
-            // Usamos la fábrica para crear el panel. La vista ya no sabe cómo se hace.
-            JPanel pluginPanel = pluginPanelFactory.createPanelFor(plugin);
-            pluginDetailPanel.add(pluginPanel, plugin.getName());
+            try {
+                JPanel pluginPanel = pluginPanelFactory.createPanelFor(plugin);
+                pluginDetailPanel.add(pluginPanel, plugin.getName());
+            } catch (Exception e) {
+                log(">> Error creando panel para " + plugin.getName() + ": " + e.getMessage());
+                JPanel fallbackPanel = pluginPanelFactory.getGenericProvider().createPanel(plugin);
+                pluginDetailPanel.add(fallbackPanel, plugin.getName());
+            }
         }
 
         pluginDetailPanel.revalidate();

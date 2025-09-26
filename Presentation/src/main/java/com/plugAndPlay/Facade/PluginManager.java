@@ -18,9 +18,7 @@ public class PluginManager {
 
     public void loadPlugin(File jarFile) {
         try {
-            String msg = "Iniciando carga de plugin desde: " + jarFile.getAbsolutePath();
-            logger.info(msg);
-            uiLogger.accept(">> " + msg);
+            logger.info("Iniciando carga de plugin desde: " + jarFile.getAbsolutePath());
             
             URL[] urls = {jarFile.toURI().toURL()};
             URLClassLoader pluginClassLoader = new URLClassLoader(urls, getClass().getClassLoader());
@@ -34,20 +32,16 @@ public class PluginManager {
 
                 int count = 0;
                 for (Plugin plugin : serviceLoader) {
-                    String successMsg = "Plugin encontrado y cargado exitosamente: " + plugin.getName();
+                    String successMsg = "Plugin cargado: " + plugin.getName();
                     logger.info(successMsg);
                     uiLogger.accept(">> " + successMsg);
                     loadedPlugins.add(plugin);
                     count++;
                 }
                 if (count == 0) {
-                    String warnMsg = "No se encontraron proveedores de Plugin en el JAR: " + jarFile.getName() + ". Verifique META-INF/services/com.plugAndPlay.Interfaces.Plugin";
+                    String warnMsg = "No se encontraron plugins válidos en " + jarFile.getName();
                     logger.warn(warnMsg);
                     uiLogger.accept(">> " + warnMsg);
-                } else {
-                    String totalMsg = "Total de plugins cargados en esta sesión: " + loadedPlugins.size();
-                    logger.info(totalMsg);
-                    uiLogger.accept(">> " + totalMsg);
                 }
             } finally {
                 Thread.currentThread().setContextClassLoader(previous);

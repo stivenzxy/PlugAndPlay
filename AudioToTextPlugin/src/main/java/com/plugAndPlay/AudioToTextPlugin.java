@@ -68,7 +68,6 @@ public class AudioToTextPlugin implements Plugin {
                 if (frames > 0 && frameRate > 0) {
                     durationSec = frames / frameRate;
                     timeoutSeconds = Math.max(120, (int) Math.ceil(durationSec * 5.0 + 90));
-                    uiLogger.accept(String.format(">> Audio de %.1f segundos detectado. Timeout: %d segundos", durationSec, timeoutSeconds));
                 }
             }
 
@@ -82,7 +81,6 @@ public class AudioToTextPlugin implements Plugin {
                 File textDir = new File(textDirPath);
                 if (!textDir.exists()) {
                     textDir.mkdirs();
-                    uiLogger.accept(">> Carpeta 'Texto' creada");
                 }
                 
                 saveTextToFile(extractedText, textFilePath);
